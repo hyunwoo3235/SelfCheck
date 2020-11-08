@@ -1,6 +1,7 @@
 package core
 
 import (
+	"SelfCheck/database"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -11,7 +12,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"selfcheck-go/database"
 )
 
 var publicKey = []byte(`
@@ -34,7 +34,7 @@ func RsaEncrypt(origData string) string {
 	return base64.StdEncoding.EncodeToString(enc)
 }
 
-func doLogin(name, birth, school, url string) (string, error) {
+func DoLogin(name, birth, school, url string) (string, error) {
 	val := map[string]string{
 		"orgCode":   school,
 		"loginType": "school",
@@ -58,7 +58,7 @@ func doLogin(name, birth, school, url string) (string, error) {
 	return token, nil
 }
 
-func doSumit(name, fname, url, token string) (string, error) {
+func DoSumit(name, fname, url, token string) (string, error) {
 	val := map[string]string{
 		"rspns00":            "y",
 		"rspns01":            "1",
@@ -85,23 +85,23 @@ func doSumit(name, fname, url, token string) (string, error) {
 }
 
 func Selfcheck(name, birth, school, url string) (string, error) {
-	token, err := doLogin(name, birth, school, url)
+	token, err := DoLogin(name, birth, school, url)
 	if err != nil {
 		return "", err
 	}
-	res, err := doSumit(name, "", url, token)
+	res, err := DoSumit(name, "", url, token)
 	if err != nil {
 		return "", err
 	}
 	return res, nil
 }
 
-func Selfcheck2(name, birth, org, prefix, ip string) (string, string, string, error) {
+func Selfcheck2(name, birth, org, prefix string) (string, string, string, error) {
 	url, city, schulNm, err := database.SearchURL(org)
 	if err != nil {
 		return "", "", "", err
 	}
-	token, err := doLogin(name, birth, org, url)
+	token, err := DoLogin(name, birth, org, url)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -109,7 +109,7 @@ func Selfcheck2(name, birth, org, prefix, ip string) (string, string, string, er
 	if prefix != "" {
 		fname = GenerateResult(name, city)
 	}
-	res, err := doSumit(name, fname, url, token)
+	res, err := DoSumit(name, fname, url, token)
 	if err != nil {
 		return "", "", "", err
 	}
