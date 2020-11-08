@@ -14,11 +14,18 @@ func Regist(c *gin.Context) {
 	org := c.DefaultQuery("orgName", "")
 	c.Header("Content-Type", "text/html")
 	if name != "" {
-		schul := database.SearchSchul(geo, org)[0]
+		lis := database.SearchSchul(geo, org)
+		if len(lis) != 1 {
+			c.HTML(200, "register-fail.html", gin.H{
+				"msg": "학교가 여러개 검색되거나 찾지 못했습니다.",
+			})
+			return
+		}
+		schul := lis[0]
 		_, err := DoLogin(name, birth, schul["schulCode"], schul["url"])
 		if err != nil {
 			c.HTML(200, "register-fail.html", gin.H{
-				"msg": "에러가 발생했습니다",
+				"msg": "이름이나 학교, 생년월일을 한번 더 확인해 주세요",
 			})
 			return
 		}
