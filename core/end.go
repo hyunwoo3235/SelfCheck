@@ -4,6 +4,7 @@ import (
 	"SelfCheck/database"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/url"
 )
 
 func Regist(c *gin.Context) {
@@ -32,16 +33,25 @@ func Regist(c *gin.Context) {
 }
 
 func DoSC(c *gin.Context) {
-	/*name, err := c.Request.Cookie("name")
+	_, err := c.Request.Cookie("name")
 	if err != nil {
 		c.Redirect(200, "/regist")
 	}
+	name, _ := c.Request.Cookie("name")
 	birth, _ := c.Request.Cookie("birth")
 	org, _ := c.Request.Cookie("org")
-	url, _ := c.Request.Cookie("url")*/
-	cookies := c.Request.Cookies()
-	for i := range cookies {
-		fmt.Println(string(rune(i)))
-	}
+	ur, _ := c.Request.Cookie("url")
 
+	names := name.Value
+	births := birth.Value
+	orgs := org.Value
+	urls := ur.Value
+
+	fmt.Println(Selfcheck(dc(names), births, orgs, dc(urls)))
+	c.HTML(200, "selfcheck-done.html", gin.H{})
+}
+
+func dc(q string) string {
+	r, _ := url.PathUnescape(q)
+	return r
 }
