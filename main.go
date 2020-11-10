@@ -10,6 +10,10 @@ func main() {
 
 	r.LoadHTMLGlob("template/*")
 	r.Static("/assets", "./assets")
+	r.NoRoute(func(c *gin.Context) {
+		c.Redirect(301, "https://youtu.be/AufydOsiD6M?t=34")
+		c.Abort()
+	})
 
 	r.GET("/regist", core.Regist)
 	r.GET("/", core.DoSC)

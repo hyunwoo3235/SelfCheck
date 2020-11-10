@@ -29,6 +29,7 @@ func Regist(c *gin.Context) {
 			})
 			return
 		}
+
 		c.SetCookie("name", name, 5184000, "/", "193.123.246.37", false, false)
 		c.SetCookie("birth", birth, 5184000, "/", "193.123.246.37", false, false)
 		c.SetCookie("org", schul["schulCode"], 5184000, "/", "193.123.246.37", false, false)
