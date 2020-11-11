@@ -11,7 +11,7 @@ func main() {
 	r.LoadHTMLGlob("template/*")
 	r.Static("/assets", "./assets")
 	r.NoRoute(func(c *gin.Context) {
-		c.Redirect(301, "https://youtu.be/AufydOsiD6M?t=34")
+		c.Redirect(301, "https://youtu.be/8kX5_69sO8Q?t=10")
 		c.Abort()
 	})
 
