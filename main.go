@@ -22,6 +22,7 @@ func main() {
 	{
 		v1.GET("", core.F4p)
 		v1.GET("/jaga", core.SC)
+		v1.GET("/tes", core.JoinList)
 	}
 
 	_ = r.Run(":80")
