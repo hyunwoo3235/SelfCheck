@@ -55,7 +55,44 @@ func DoLogin(name, birth, school, url string) (string, error) {
 	var data map[string]string
 	_ = json.Unmarshal(body, &data)
 	token := data["token"]
-	return token, nil
+	PNo := getPNo(url, token)
+	if PNo == "" {
+		return "", errors.New(" 학생 정보를 불러오는데 에러가 발생했습니다.")
+	}
+	token2 := getToken2(PNo, school, url, token)
+	return token2, nil
+}
+
+func getToken2(pno, org, url, token string) string {
+	val := map[string]string{
+		"orgCode": org,
+		"userPNo": pno,
+	}
+	jsonvalue, _ := json.Marshal(val)
+	req, _ := http.NewRequest("POST", url+"v2/getUserInfo", bytes.NewBuffer(jsonvalue))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
+	client := &http.Client{}
+	respon, _ := client.Do(req)
+	defer respon.Body.Close()
+	var resdata map[string]string
+	body, _ := ioutil.ReadAll(respon.Body)
+	_ = json.Unmarshal(body, &resdata)
+	return resdata["token"]
+}
+
+func getPNo(url, token string) string {
+	jsonValue, _ := json.Marshal(map[string]string{})
+	req, _ := http.NewRequest("POST", url+"v2/selectUserGroup", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	var data []map[string]string
+	_ = json.Unmarshal(body, &data)
+	return data[0]["userPNo"]
 }
 
 func DoSumit(name, fname, url, token string) (string, error) {
