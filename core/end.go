@@ -129,10 +129,6 @@ func SC(c *gin.Context) {
 	})
 }
 
-func JoinList(c *gin.Context) {
-	c.JSON(200, Join("2", "09"))
-}
-
 func dc(q string) string {
 	r, _ := url.PathUnescape(q)
 	return r
