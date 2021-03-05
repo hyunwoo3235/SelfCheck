@@ -1,4 +1,4 @@
-package core
+package eduro
 
 import (
 	"math/rand"

@@ -1,4 +1,4 @@
-package core
+package eduro
 
 import (
 	"SelfCheck/database"
@@ -26,7 +26,7 @@ tQIDAQAB
 -----END PUBLIC KEY-----
 `)
 
-func RsaEncrypt(origData string) string {
+func rsaEncrypt(origData string) string {
 	block, _ := pem.Decode(publicKey)
 	pubInterface, _ := x509.ParsePKIXPublicKey(block.Bytes)
 	pub := pubInterface.(*rsa.PublicKey)
@@ -39,8 +39,8 @@ func DoLogin(name, birth, school, url string) (string, error) {
 		"orgCode":   school,
 		"loginType": "school",
 		"stdntPNo":  "",
-		"name":      RsaEncrypt(name),
-		"birthday":  RsaEncrypt(birth),
+		"name":      rsaEncrypt(name),
+		"birthday":  rsaEncrypt(birth),
 	}
 	jsonValue, _ := json.Marshal(val)
 	req, _ := http.NewRequest("POST", url+"v2/findUser", bytes.NewBuffer(jsonValue))
@@ -61,6 +61,42 @@ func DoLogin(name, birth, school, url string) (string, error) {
 	}
 	token2 := getToken2(PNo, school, url, token)
 	return token2, nil
+}
+
+func DoLoginPno(name, pno, school, url string) (string, error) {
+	val := map[string]string{
+		"orgCode":   school,
+		"loginType": "school",
+		"name":      rsaEncrypt(name),
+		"userPNo":   pno,
+	}
+	jsonValue, _ := json.Marshal(val)
+	req, _ := http.NewRequest("POST", url+"v2/findUser", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	var data map[string]string
+	_ = json.Unmarshal(body, &data)
+	return data["token"], nil
+}
+
+func validatePassword(url, token, pass string) (string, error) {
+	val := map[string]string{
+		"password": rsaEncrypt(pass),
+	}
+	jsonvalue, _ := json.Marshal(val)
+	req, _ := http.NewRequest("POST", url+"v2/validatePassword", bytes.NewBuffer(jsonvalue))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
+	client := &http.Client{}
+	respon, _ := client.Do(req)
+	defer respon.Body.Close()
+	var resdata map[string]string
+	body, _ := ioutil.ReadAll(respon.Body)
+	_ = json.Unmarshal(body, &resdata)
+	return resdata["token"], nil
 }
 
 func getToken2(pno, org, url, token string) string {
@@ -119,6 +155,28 @@ func DoSumit(name, fname, url, token string) (string, error) {
 	body, _ := ioutil.ReadAll(respon.Body)
 	_ = json.Unmarshal(body, &resdata)
 	return resdata["inveYmd"], nil
+}
+
+func Join(url, org, grade, class, token string) ([]map[string]string, error) {
+	val := map[string]string{
+		"orgCode":   org,
+		"grade":     grade,
+		"classCode": class,
+	}
+	jsonvalue, _ := json.Marshal(val)
+	req, _ := http.NewRequest("POST", url+"join", bytes.NewBuffer(jsonvalue))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
+	client := &http.Client{}
+	respon, _ := client.Do(req)
+	defer respon.Body.Close()
+	var resdata map[string][]map[string]string
+	body, _ := ioutil.ReadAll(respon.Body)
+	err := json.Unmarshal(body, &resdata)
+	if err != nil {
+		return resdata["joinList"], err
+	}
+	return resdata["joinList"], nil
 }
 
 func Selfcheck(name, birth, school, url string) (string, error) {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SelfCheck/core"
+	"SelfCheck/eduro"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,13 +16,11 @@ func main() {
 		c.Abort()
 	})
 
-	r.GET("/regist", core.Regist)
-	r.GET("/", core.DoSC)
-
 	v1 := r.Group("/api")
 	{
-		v1.GET("", core.F4p)
-		v1.GET("/jaga", core.SC)
+		v1.GET("", eduro.F4p)
+		v1.GET("/jaga", eduro.SC)
+		v1.GET("/isSurvey", eduro.Elifstatus)
 	}
 
 	_ = r.Run(":80")

@@ -1,65 +1,9 @@
-package core
+package eduro
 
 import (
 	"SelfCheck/database"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/url"
 )
-
-func Regist(c *gin.Context) {
-	name := c.DefaultQuery("name", "")
-	birth := c.DefaultQuery("birth", "")
-	geo := c.DefaultQuery("geo", "")
-	org := c.DefaultQuery("orgName", "")
-	c.Header("Content-Type", "text/html")
-	if name != "" {
-		lis := database.SearchSchul(geo, org)
-		if len(lis) != 1 {
-			c.HTML(200, "register-fail.html", gin.H{
-				"msg": "학교가 여러개 검색되거나 찾지 못했습니다.",
-			})
-			return
-		}
-		schul := lis[0]
-		_, err := DoLogin(name, birth, schul["schulCode"], schul["url"])
-		if err != nil {
-			c.HTML(200, "register-fail.html", gin.H{
-				"msg": "이름이나 학교, 생년월일을 한번 더 확인해 주세요",
-			})
-			return
-		}
-
-		c.SetCookie("name", name, 5184000, "/", "193.123.246.37", false, false)
-		c.SetCookie("birth", birth, 5184000, "/", "193.123.246.37", false, false)
-		c.SetCookie("org", schul["schulCode"], 5184000, "/", "193.123.246.37", false, false)
-		c.SetCookie("url", schul["url"], 5184000, "/", "193.123.246.37", false, false)
-		c.HTML(200, "register-success.html", gin.H{})
-		return
-	}
-	c.HTML(200, "register.html", gin.H{})
-}
-
-func DoSC(c *gin.Context) {
-	_, err := c.Request.Cookie("name")
-	if err != nil {
-		c.Redirect(301, "/regist")
-		c.Abort()
-		return
-	}
-	name, _ := c.Request.Cookie("name")
-	birth, _ := c.Request.Cookie("birth")
-	org, _ := c.Request.Cookie("org")
-	ur, _ := c.Request.Cookie("url")
-
-	names := name.Value
-	births := birth.Value
-	orgs := org.Value
-	urls := ur.Value
-
-	fmt.Println(Selfcheck(dc(names), births, orgs, dc(urls)))
-	c.HTML(200, "selfcheck-done.html", gin.H{})
-}
 
 func F4p(c *gin.Context) {
 	pName := c.DefaultQuery("pName", "")
@@ -70,8 +14,8 @@ func F4p(c *gin.Context) {
 	if schulNm != "" && geoNm != "" && pName != "" && frnoRidno != "" {
 		maps := database.SearchSchul(geoNm, schulNm)
 		if len(maps) == 1 {
-			maps[0]["pName"] = RsaEncrypt(pName)
-			maps[0]["frnoRidno"] = RsaEncrypt(frnoRidno)
+			maps[0]["pName"] = rsaEncrypt(pName)
+			maps[0]["frnoRidno"] = rsaEncrypt(frnoRidno)
 			c.JSON(200, maps[0])
 		} else {
 			c.JSON(200, gin.H{
@@ -83,8 +27,8 @@ func F4p(c *gin.Context) {
 		}
 	} else if pName != "" && frnoRidno != "" {
 		c.JSON(200, gin.H{
-			"pName":     RsaEncrypt(pName),
-			"frnoRidno": RsaEncrypt(frnoRidno),
+			"pName":     rsaEncrypt(pName),
+			"frnoRidno": rsaEncrypt(frnoRidno),
 		})
 	} else if schulNm != "" && geoNm != "" {
 		maps := database.SearchSchul(geoNm, schulNm)
@@ -129,7 +73,72 @@ func SC(c *gin.Context) {
 	})
 }
 
-func dc(q string) string {
-	r, _ := url.PathUnescape(q)
-	return r
+func Schulis(c *gin.Context) {
+	pName := c.DefaultQuery("pName", "")
+	frnoRidno := c.DefaultQuery("frnoRidno", "")
+	schulNm := c.DefaultQuery("schulNm", "")
+	geoNm := c.DefaultQuery("geoNm", "")
+	if schulNm != "" && geoNm != "" && pName != "" && frnoRidno != "" {
+		maps := database.SearchSchul(geoNm, schulNm)
+		if len(maps) == 1 {
+			maps[0]["pName"] = rsaEncrypt(pName)
+			maps[0]["frnoRidno"] = rsaEncrypt(frnoRidno)
+			c.JSON(200, maps[0])
+		} else {
+			c.JSON(200, gin.H{
+				"url":       "",
+				"cityNm":    "",
+				"schulCode": "",
+				"schulNm":   "학교가 여러개가 검색되었습니다. 더 정확한 이름을 입력하거나, 학교 코드로 진행해 주세요.",
+			})
+		}
+	}
+}
+
+func Elifstatus(c *gin.Context) {
+	org := c.DefaultQuery("org", "")
+	grade := c.DefaultQuery("grade", "")
+	class := c.DefaultQuery("class", "")
+	isJson := c.DefaultQuery("json", "false")
+
+	if org == "" {
+		c.JSON(200, gin.H{
+			"error": "헤으응",
+		})
+		return
+	}
+
+	url, geo, _, _ := database.SearchURL(org)
+
+	r, err := Join(url, org, grade, class, database.GT(geo))
+	if err != nil {
+		c.JSON(200, gin.H{
+			"message": "서버 오류가 발생했습니다",
+		})
+		return
+	}
+	var res []map[string]string
+	for _, i := range r {
+		rspns00 := i["rspns00"]
+		surveyYn := i["surveyYn"]
+
+		isStmptom := "N"
+		if rspns00 == "N" && surveyYn == "Y" {
+			isStmptom = "Y"
+		}
+		res = append(res, map[string]string{
+			"attNumber":   i["stdntCnEncpt"],
+			"isSurvey":    i["surveyYn"],
+			"isSymptom":   isStmptom,
+			"registerDtm": i["registerDtm"],
+		})
+	}
+
+	c.JSON(200, gin.H{
+		"orgCode":    org,
+		"grade":      grade,
+		"class":      class,
+		"isJson":     isJson,
+		"surveyList": res,
+	})
 }

@@ -2,31 +2,31 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	_ "github.com/mattn/go-sqlite3"
+	"io/ioutil"
 	"log"
+	"os"
 )
+
+type School struct {
+	name    string
+	org     string
+	geoCode string
+	url     string
+}
 
 var sqdb, _ = sql.Open("sqlite3", "database.db")
 
-var urlList = map[string]string{
-	"서울": "https://senhcs.eduro.go.kr/",
-	"경기": "https://goehcs.eduro.go.kr/",
-	"대전": "https://djehcs.eduro.go.kr/",
-	"대구": "https://dgehcs.eduro.go.kr/",
-	"부산": "https://penhcs.eduro.go.kr/",
-	"인천": "https://icehcs.eduro.go.kr/",
-	"광주": "https://genhcs.eduro.go.kr/",
-	"울산": "https://usehcs.eduro.go.kr/",
-	"세종": "https://sjehcs.eduro.go.kr/",
-	"충북": "https://cbehcs.eduro.go.kr/",
-	"충남": "https://cnehcs.eduro.go.kr/",
-	"경북": "https://gbehcs.eduro.go.kr/",
-	"경남": "https://gnehcs.eduro.go.kr/",
-	"강원": "https://kwehcs.eduro.go.kr/",
-	"전북": "https://jbehcs.eduro.go.kr/",
-	"전남": "https://jnehcs.eduro.go.kr/",
-	"제주": "https://jjehcs.eduro.go.kr/",
+var tokens = buildData()
+
+func buildData() map[string]map[string]string {
+	jsonFile, _ := os.Open("authToken.json")
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	var authToken map[string]map[string]map[string]string
+	_ = json.Unmarshal(byteValue, &authToken)
+	return authToken["authToken"]
 }
 
 func SearchSchul(cityNm, schulNm string) []map[string]string {
@@ -49,7 +49,7 @@ func SearchSchul(cityNm, schulNm string) []map[string]string {
 			"cityNm":    cityNm,
 			"schulNm":   schulNm,
 			"schulCode": schulCode,
-			"url":       urlList[cityNm],
+			"url":       "https://" + tokens[cityNm]["areaCode"] + "hcs.eduro.go.kr/",
 		})
 	}
 	return maps
@@ -74,7 +74,7 @@ func SearchURL(schulCode string) (string, string, string, error) {
 		_ = row.Scan(&cityNm, &schulNm, &schulCode)
 		maps = map[string]string{
 			"cityNm":  cityNm,
-			"url":     urlList[cityNm],
+			"url":     "https://" + tokens[cityNm]["areaCode"] + "hcs.eduro.go.kr/",
 			"schulNm": schulNm,
 		}
 	}
@@ -82,4 +82,8 @@ func SearchURL(schulCode string) (string, string, string, error) {
 		return "", "", "", errors.New("학교 검색중 에러가 발생했습니다.")
 	}
 	return maps["url"], maps["cityNm"], maps["schulNm"], nil
+}
+
+func GT(geo string) string {
+	return tokens[geo]["token"]
 }
