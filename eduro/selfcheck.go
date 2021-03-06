@@ -180,19 +180,7 @@ func Join(url, org, grade, class, token string) ([]map[string]string, error) {
 	return resdata["joinList"], nil
 }
 
-func Selfcheck(name, birth, school, url string) (string, error) {
-	token, err := DoLogin(name, birth, school, url)
-	if err != nil {
-		return "", err
-	}
-	res, err := DoSumit(name, "", url, token)
-	if err != nil {
-		return "", err
-	}
-	return res, nil
-}
-
-func Selfcheck2(name, birth, org, pass, prefix string) (string, string, string, error) {
+func Selfcheck(name, birth, org, pass, prefix string) (string, string, string, error) {
 	url, city, schulNm, err := database.SearchURL(org)
 	if err != nil {
 		return "", "", "", err

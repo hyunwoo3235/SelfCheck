@@ -62,7 +62,7 @@ func SC(c *gin.Context) {
 		c.JSON(503, gin.H{"error": "인자좀 제대로 주세요요"})
 		return
 	}
-	res, schulNm, fname, err := Selfcheck2(name, birth, org, pass, pf)
+	res, schulNm, fname, err := Selfcheck(name, birth, org, pass, pf)
 	if err != nil {
 		c.JSON(503, gin.H{"error": "인자에 오류있는데 인자좀 제대로 주세요요"})
 		return
@@ -123,7 +123,6 @@ func Elifstatus(c *gin.Context) {
 	}
 
 	if isJson == "false" {
-		header := fmt.Sprintf("학교 코드:%s\n%s학년 %s반\n\n", org, grade, class)
 		var res []string
 		for _, i := range r {
 			rspns00 := i["rspns00"]
@@ -145,31 +144,50 @@ func Elifstatus(c *gin.Context) {
 			}
 			res = append(res, fmt.Sprintf("|ㅤ%2s번ㅤ|ㅤ%sㅤ|%s", i["stdntCnEncpt"], isStmptom, resDtm))
 		}
+		header := fmt.Sprintf("학교 코드:%s\n%s학년 %s반\n\n\n", org, grade, class)
 		c.String(http.StatusOK, header+strings.Join(res, "\n"))
 		return
 	}
+
 	var res []map[string]string
+	var stat = [3]int{0, 0, 0}
 	for _, i := range r {
 		rspns00 := i["rspns00"]
 		surveyYn := i["surveyYn"]
 
-		isStmptom := "N"
-		if rspns00 == "N" && surveyYn == "Y" {
+		var isStmptom, registerDtm string
+		switch {
+		case surveyYn == "N":
+			isStmptom = "N"
+			registerDtm = ""
+			stat[0] += 1
+		case rspns00 == "N" && surveyYn == "Y":
 			isStmptom = "Y"
+			registerDtm = i["registerDtm"][:19]
+			stat[2] += 1
+		default:
+			isStmptom = "N"
+			registerDtm = i["registerDtm"][:19]
+			stat[1] += 1
 		}
 		res = append(res, map[string]string{
 			"attNumber":   i["stdntCnEncpt"],
 			"isSurvey":    i["surveyYn"],
 			"isSymptom":   isStmptom,
-			"registerDtm": i["registerDtm"][:19],
+			"registerDtm": registerDtm,
 		})
 	}
 
 	c.JSON(200, gin.H{
-		"orgCode":    org,
-		"grade":      grade,
-		"class":      class,
-		"isJson":     isJson,
+		"orgCode": org,
+		"grade":   grade,
+		"class":   class,
+		"isJson":  isJson,
+		"detail": map[string]int{
+			"nonpart": stat[0],
+			"normal":  stat[1],
+			"symptom": stat[2],
+		},
 		"surveyList": res,
 	})
 }
