@@ -8,8 +8,8 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.LoadHTMLGlob("template/*")
-	r.Static("/assets", "./assets")
+	//r.LoadHTMLGlob("template/*")
+	//r.Static("/assets", "./assets")
 	r.StaticFile("/favicon.ico", "./assets/favicon.svg")
 	r.NoRoute(func(c *gin.Context) {
 		c.Redirect(301, "https://youtu.be/atykIBND1bg?t=35")

@@ -2,6 +2,7 @@ package eduro
 
 import (
 	"SelfCheck/database"
+	"SelfCheck/util"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -191,7 +192,7 @@ func Selfcheck(name, birth, school, url string) (string, error) {
 	return res, nil
 }
 
-func Selfcheck2(name, birth, org, prefix string) (string, string, string, error) {
+func Selfcheck2(name, birth, org, pass, prefix string) (string, string, string, error) {
 	url, city, schulNm, err := database.SearchURL(org)
 	if err != nil {
 		return "", "", "", err
@@ -202,7 +203,7 @@ func Selfcheck2(name, birth, org, prefix string) (string, string, string, error)
 	}
 	fname := ""
 	if prefix != "" {
-		fname = GenerateResult(name, city)
+		fname = util.GenerateResult(name, city)
 	}
 	res, err := DoSumit(name, fname, url, token)
 	if err != nil {

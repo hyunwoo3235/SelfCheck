@@ -2,7 +2,10 @@ package eduro
 
 import (
 	"SelfCheck/database"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strings"
 )
 
 func F4p(c *gin.Context) {
@@ -53,12 +56,13 @@ func SC(c *gin.Context) {
 	name := c.DefaultQuery("name", "")
 	birth := c.DefaultQuery("birth", "")
 	org := c.DefaultQuery("org", "")
+	pass := c.DefaultQuery("pass", "")
 	pf := c.DefaultQuery("pf", "")
 	if name == "" || birth == "" || org == "" {
 		c.JSON(503, gin.H{"error": "인자좀 제대로 주세요요"})
 		return
 	}
-	res, schulNm, fname, err := Selfcheck2(name, birth, org, pf)
+	res, schulNm, fname, err := Selfcheck2(name, birth, org, pass, pf)
 	if err != nil {
 		c.JSON(503, gin.H{"error": "인자에 오류있는데 인자좀 제대로 주세요요"})
 		return
@@ -117,6 +121,33 @@ func Elifstatus(c *gin.Context) {
 		})
 		return
 	}
+
+	if isJson == "false" {
+		header := fmt.Sprintf("학교 코드:%s\n%s학년 %s반\n\n", org, grade, class)
+		var res []string
+		for _, i := range r {
+			rspns00 := i["rspns00"]
+			surveyYn := i["surveyYn"]
+
+			var isStmptom, resDtm string
+			switch {
+			case surveyYn == "N":
+				isStmptom = "미참여"
+			case rspns00 == "N" && surveyYn == "Y":
+				isStmptom = "유증상"
+			default:
+				isStmptom = "ㅤ정상"
+			}
+			if i["registerDtm"] == "" {
+				resDtm = ""
+			} else {
+				resDtm = "ㅤ" + i["registerDtm"][:19] + " |"
+			}
+			res = append(res, fmt.Sprintf("|ㅤ%2s번ㅤ|ㅤ%sㅤ|%s", i["stdntCnEncpt"], isStmptom, resDtm))
+		}
+		c.String(http.StatusOK, header+strings.Join(res, "\n"))
+		return
+	}
 	var res []map[string]string
 	for _, i := range r {
 		rspns00 := i["rspns00"]
@@ -130,7 +161,7 @@ func Elifstatus(c *gin.Context) {
 			"attNumber":   i["stdntCnEncpt"],
 			"isSurvey":    i["surveyYn"],
 			"isSymptom":   isStmptom,
-			"registerDtm": i["registerDtm"],
+			"registerDtm": i["registerDtm"][:19],
 		})
 	}
 
